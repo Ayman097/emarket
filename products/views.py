@@ -4,10 +4,11 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .models import Product
+from .models import Product, Review
 from .serializers import ProductSerializers
 from .filters import ProductFilter
 from decimal import Decimal
+from django.db.models import Avg
 # Create your views here.
 
 @api_view()
@@ -15,7 +16,7 @@ def products(request):
     products = Product.objects.all().order_by('id')
     filterset = ProductFilter(request.GET, queryset=products)
 
-    pageNum = 3
+    pageNum = 10
     paginator = PageNumberPagination()
     paginator.page_size = pageNum
 
@@ -78,3 +79,56 @@ def delete_product(request, id):
     product.delete()
 
     return Response({"product": 'Deleted Successfully'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_review(request, id):
+    user = request.user
+    product = get_object_or_404(Product, pk=id) 
+    data = request.data
+    review = product.reviews.filter(user=user)
+    
+    # To Ensure user give rate between 1 : 5
+    if data['rating'] <= 0 or data['rating'] >= 6:
+        return Response({'Error': "Please Rate between 1 to 5"}, status=status.HTTP_400_BAD_REQUEST)
+    elif review.exists():
+        new_review = {'rating': data['rating'], 'comment': data['comment']}
+        review.update(**new_review)
+
+        # Calculate Avg Rating for product
+        rating = product.reviews.aggregate(avg_ratings = Avg('rating'))
+        product.rateings = rating['avg_ratings']
+        product.save()
+        return Response({'details': 'Review Updated Successfully'}, status=status.HTTP_200_OK)
+    else:
+        Review.objects.create(
+            product = product,
+            user = user,
+            comment = data['comment'],
+            rating = data['rating']   
+        )
+        rating = product.reviews.aggregate(avg_ratings = Avg('rating'))
+        product.rateings = rating['avg_ratings']
+        product.save()
+        return Response({'details': 'Review Created Successfully'}, status=status.HTTP_200_OK)
+    
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delate_review(request, id):
+    user = request.user
+    product = get_object_or_404(Product, pk=id) 
+    review = product.reviews.filter(user=user)
+
+    if review.exists():
+        review.delete()
+        rating = product.reviews.aggregate(avg_ratings = Avg('rating'))
+        if rating['avg_ratings'] is None:
+            rating['avg_ratings'] = 0
+            product.rateings = rating['avg_ratings']
+            product.save()
+            return Response({'details': 'Review Deleted'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'you are not authrized to delete this review'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response({'error': 'Review Not found'}, status=status.HTTP_400_BAD_REQUEST)
