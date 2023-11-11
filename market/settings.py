@@ -148,3 +148,11 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',)
 }
+
+# EMAIL_BACKEND = 'django.core.mail.backends.stmp.EmailBackend
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST_USER = 'fa6e116df011cb'
+EMAIL_HOST_PASSWORD = 'eb3e2ef7cf1af6'
+EMAIL_PORT = '2525'
+EMAIL_USE_TLS: False
+EMAIL_USE_SSL: False
