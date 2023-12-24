@@ -52,6 +52,3 @@ If you'd like to contribute to the project, please follow these steps:
 
 Please make sure to follow the existing coding style and add appropriate tests for your changes.
 
-## License
-
-This project is licensed under the [MIT License](LICENSE), which means you are free to use, modify, and distribute the code. See the [LICENSE](LICENSE) file for details.
